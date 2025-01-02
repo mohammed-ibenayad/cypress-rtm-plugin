@@ -1,0 +1,9 @@
+{
+    "REQ-001": {
+      "id": "REQ-001",
+      "title": "Test Requirement",
+      "type": "functional",
+      "priority": "p1-high",
+      "description": "Test description"
+    }
+  }

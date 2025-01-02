@@ -1,0 +1,8 @@
+{
+    "US-001": {
+      "id": "US-001",
+      "title": "Test Story",
+      "description": "Test user story",
+      "acceptanceCriteria": ["Criterion 1"]
+    }
+  }

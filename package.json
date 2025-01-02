@@ -1,0 +1,46 @@
+{
+  "name": "cypress-rtm-plugin",
+  "version": "1.0.0",
+  "description": "Requirements Traceability Matrix Plugin for Cypress",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "files": [
+    "src/**/*",
+    "index.js",
+    "index.d.ts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/cypress-rtm-plugin.git"
+  },
+  "keywords": [
+    "cypress",
+    "cypress-plugin",
+    "rtm",
+    "testing",
+    "traceability",
+    "test-management"
+  ],
+  "author": "Mohammed Iben Ayad",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/cypress-rtm-plugin/issues"
+  },
+  "homepage": "https://github.com/yourusername/cypress-rtm-plugin#readme",
+  "peerDependencies": {
+    "cypress": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.7.0"
+  }
+}

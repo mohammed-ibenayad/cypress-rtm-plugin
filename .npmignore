@@ -1,0 +1,13 @@
+.git
+.gitignore
+tests/
+coverage/
+.nyc_output/
+.github/
+.vscode/
+.idea/
+*.log
+*.tgz
+jest.config.js
+.eslintrc*
+tsconfig.json

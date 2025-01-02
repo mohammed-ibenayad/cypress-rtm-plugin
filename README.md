@@ -14,7 +14,7 @@ A Requirements Traceability Matrix (RTM) plugin for Cypress to track and report 
 ## Installation
 
 ```bash
-npm install cypress-rtm-plugin
+npm install @asaltech/cypress-rtm-plugin
 ```
 
 ## Setup

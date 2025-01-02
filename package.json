@@ -1,5 +1,5 @@
 {
-  "name": "@mohammed-ibenayad/cypress-rtm-plugin",
+  "name": "@asaltech/cypress-rtm-plugin",
   "version": "1.0.0",
   "description": "Requirements Traceability Matrix Plugin for Cypress",
   "main": "index.js",

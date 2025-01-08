@@ -34,19 +34,6 @@ class CypressRTM {
     this.requirements = new Map();
     this.testCases = new Map();
     this.suites = new Map();
-    
-    // Initialize coverage tracking
-    this.coverage = {
-      requirements: new Map(),
-      stories: new Map(),
-      types: {
-        requirements: new Map(),
-        tests: new Map()
-      }
-    };
-
-    // Initialize report generator
-    this.reportGenerator = new RTMReportGenerator(this);
   }
 
   /**
@@ -61,9 +48,6 @@ class CypressRTM {
       await this.loadRequirements();
       await this.loadUserStories();
 
-      // Initialize coverage maps for loaded data
-      this.initializeCoverageMaps();
-
       return true;
     } catch (error) {
       throw new RTMError(`Failed to initialize RTM: ${error.message}`, 'INIT_ERROR');
@@ -77,7 +61,7 @@ class CypressRTM {
     try {
       const content = await fs.readFile(this.config.requirementsPath, 'utf8');
       const requirements = JSON.parse(content);
-      
+
       Object.entries(requirements).forEach(([id, req]) => {
         if (this.validateRequirement(req)) {
           this.requirements.set(id, req);
@@ -98,7 +82,7 @@ class CypressRTM {
     try {
       const content = await fs.readFile(this.config.userStoriesPath, 'utf8');
       const stories = JSON.parse(content);
-      
+
       Object.entries(stories).forEach(([id, story]) => {
         if (story.id && story.title) {
           this.userStories.set(id, story);
@@ -110,25 +94,6 @@ class CypressRTM {
       if (error instanceof RTMError) throw error;
       throw new RTMError(`Failed to load user stories: ${error.message}`, 'USER_STORIES_LOAD_ERROR');
     }
-  }
-
-  /**
-   * Initialize coverage maps for all loaded data
-   */
-  initializeCoverageMaps() {
-    // Initialize requirement type coverage
-    this.requirements.forEach(req => {
-      if (!this.coverage.types.requirements.has(req.type)) {
-        this.coverage.types.requirements.set(req.type, new Set());
-      }
-    });
-
-    // Initialize story coverage
-    this.userStories.forEach((_, storyId) => {
-      if (!this.coverage.stories.has(storyId)) {
-        this.coverage.stories.set(storyId, new Set());
-      }
-    });
   }
 
   /**
@@ -183,7 +148,7 @@ class CypressRTM {
           return false;
         }
         // Check if all referenced requirements exist
-        const validRequirements = testCase.requirements.every(reqId => 
+        const validRequirements = testCase.requirements.every(reqId =>
           this.requirements.has(reqId)
         );
         if (!validRequirements) {
@@ -198,7 +163,7 @@ class CypressRTM {
   }
 
   /**
-   * Add a test case and update coverage
+   * Add a test case
    */
   addTestCase(testCase) {
     // Validate test case
@@ -208,162 +173,96 @@ class CypressRTM {
 
     // Store test case
     this.testCases.set(testCase.id, testCase);
-
-    // Update requirements coverage
-    if (testCase.requirements) {
-      testCase.requirements.forEach(reqId => {
-        if (!this.coverage.requirements.has(reqId)) {
-          this.coverage.requirements.set(reqId, new Set());
-        }
-        this.coverage.requirements.get(reqId).add(testCase.id);
-
-        // Update requirement type coverage
-        const req = this.requirements.get(reqId);
-        if (req && req.type) {
-          if (!this.coverage.types.requirements.has(req.type)) {
-            this.coverage.types.requirements.set(req.type, new Set());
-          }
-          this.coverage.types.requirements.get(req.type).add(testCase.id);
-        }
-      });
-    }
-
-    // Update user stories coverage
-    if (testCase.userStories) {
-      testCase.userStories.forEach(storyId => {
-        if (!this.coverage.stories.has(storyId)) {
-          this.coverage.stories.set(storyId, new Set());
-        }
-        this.coverage.stories.get(storyId).add(testCase.id);
-      });
-    }
-
-    // Update test type coverage
-    if (!this.coverage.types.tests.has(testCase.type)) {
-      this.coverage.types.tests.set(testCase.type, new Set());
-    }
-    this.coverage.types.tests.get(testCase.type).add(testCase.id);
   }
 
   /**
-   * Generate reports using the report generator
+   * Update the coverage.json file with new test cases and metrics
+   */
+  async updateCoverage() {
+    const coveragePath = path.join(this.config.outputPath, 'coverage.json');
+    let coverageData = { testCases: [], metrics: {} };
+
+    try {
+      // Read existing coverage data if the file exists
+      if (await fs.access(coveragePath).then(() => true).catch(() => false)) {
+        const content = await fs.readFile(coveragePath, 'utf8');
+        coverageData = JSON.parse(content);
+      }
+
+      // Append new test cases
+      for (const [testId, testCase] of this.testCases.entries()) {
+        if (!coverageData.testCases.some(tc => tc.id === testId)) {
+          coverageData.testCases.push(testCase);
+        }
+      }
+
+      // Calculate aggregated metrics
+      const totalTestCases = coverageData.testCases.length;
+      const passedTestCases = coverageData.testCases.filter(tc => tc.status === 'passed').length;
+      const failedTestCases = coverageData.testCases.filter(tc => tc.status === 'failed').length;
+      const skippedTestCases = coverageData.testCases.filter(tc => tc.status === 'skipped').length;
+
+      const totalRequirements = this.requirements.size;
+      const coveredRequirements = new Set(
+        coverageData.testCases.flatMap(tc => tc.requirements || [])
+      ).size;
+
+      coverageData.metrics = {
+        totalTestCases,
+        passedTestCases,
+        failedTestCases,
+        skippedTestCases,
+        totalRequirements,
+        coveredRequirements,
+        coveragePercentage: totalRequirements ? (coveredRequirements / totalRequirements) * 100 : 0
+      };
+
+      // Write updated coverage data to file
+      await fs.writeFile(coveragePath, JSON.stringify(coverageData, null, 2));
+    } catch (error) {
+      throw new RTMError(`Failed to update coverage: ${error.message}`, 'COVERAGE_UPDATE_ERROR');
+    }
+  }
+
+  /**
+   * Generate reports
    */
   async generateReports() {
     try {
-      await this.reportGenerator.generateReports();
+      // Generate data22.json (without coverage section)
+      const data22Path = path.join(this.config.outputPath, 'data22.json');
+      const data22 = {
+        timestamp: new Date().toISOString(),
+        summary: {
+          totalRequirements: this.requirements.size,
+          totalUserStories: this.userStories.size,
+          totalTestCases: this.testCases.size,
+          execution: {
+            passed: Array.from(this.testCases.values()).filter(tc => tc.status === 'passed').length,
+            failed: Array.from(this.testCases.values()).filter(tc => tc.status === 'failed').length,
+            skipped: Array.from(this.testCases.values()).filter(tc => tc.status === 'skipped').length,
+            percentagePassed: this.testCases.size ?
+              (Array.from(this.testCases.values()).filter(tc => tc.status === 'passed').length / this.testCases.size) * 100 : 0
+          }
+        },
+        execution: {
+          testCases: Array.from(this.testCases.values())
+        },
+        uncovered: {
+          requirements: Array.from(this.requirements.keys())
+            .filter(reqId => !Array.from(this.testCases.values()).some(tc => tc.requirements?.includes(reqId))),
+          userStories: Array.from(this.userStories.keys())
+            .filter(storyId => !Array.from(this.testCases.values()).some(tc => tc.userStories?.includes(storyId)))
+        }
+      };
+
+      await fs.writeFile(data22Path, JSON.stringify(data22, null, 2));
+
+      // Update coverage.json
+      await this.updateCoverage();
     } catch (error) {
       throw new RTMError(`Failed to generate reports: ${error.message}`, 'REPORT_GENERATION_ERROR');
     }
-  }
-
-  /**
-   * Get current coverage statistics
-   */
-  getCoverageStats() {
-    return {
-      requirements: {
-        total: this.requirements.size,
-        covered: this.coverage.requirements.size,
-        percentage: this.requirements.size ? 
-          (this.coverage.requirements.size / this.requirements.size) * 100 : 0
-      },
-      stories: {
-        total: this.userStories.size,
-        covered: this.coverage.stories.size,
-        percentage: this.userStories.size ? 
-          (this.coverage.stories.size / this.userStories.size) * 100 : 0
-      },
-      byType: {
-        requirements: this.getRequirementTypeCoverage(),
-        tests: this.getTestTypeCoverage()
-      }
-    };
-  }
-
-  /**
-   * Get coverage by requirement type
-   */
-  getRequirementTypeCoverage() {
-    const coverage = {};
-    this.coverage.types.requirements.forEach((tests, type) => {
-      const totalOfType = Array.from(this.requirements.values())
-        .filter(req => req.type === type).length;
-      
-      coverage[type] = {
-        total: totalOfType,
-        covered: tests.size,
-        percentage: totalOfType ? (tests.size / totalOfType) * 100 : 0
-      };
-    });
-    return coverage;
-  }
-
-  /**
-   * Get coverage by test type
-   */
-  getTestTypeCoverage() {
-    const coverage = {};
-    this.coverage.types.tests.forEach((tests, type) => {
-      coverage[type] = {
-        total: tests.size,
-        requirements: new Set(
-          Array.from(tests).flatMap(testId => 
-            this.testCases.get(testId)?.requirements || []
-          )
-        ).size
-      };
-    });
-    return coverage;
-  }
-
-  /**
-   * Get uncovered items
-   */
-  getUncoveredItems() {
-    return {
-      requirements: Array.from(this.requirements.keys())
-        .filter(reqId => !this.coverage.requirements.has(reqId)),
-      stories: Array.from(this.userStories.keys())
-        .filter(storyId => !this.coverage.stories.has(storyId))
-    };
-  }
-
-  /**
-   * Get critical coverage gaps
-   */
-  getCriticalGaps() {
-    const gaps = [];
-
-    // Check high-priority requirements with no tests
-    this.requirements.forEach((req, reqId) => {
-      if (req.priority === REQUIREMENT_PRIORITIES.P0 && 
-          !this.coverage.requirements.has(reqId)) {
-        gaps.push({
-          type: 'uncovered_critical_requirement',
-          requirementId: reqId,
-          title: req.title
-        });
-      }
-    });
-
-    // Check security requirements with no security tests
-    this.requirements.forEach((req, reqId) => {
-      if (req.type === REQUIREMENT_TYPES.SECURITY) {
-        const tests = this.coverage.requirements.get(reqId) || new Set();
-        const hasSecurityTest = Array.from(tests)
-          .some(testId => this.testCases.get(testId)?.type === TEST_TYPES.SECURITY);
-        
-        if (!hasSecurityTest) {
-          gaps.push({
-            type: 'security_requirement_no_security_test',
-            requirementId: reqId,
-            title: req.title
-          });
-        }
-      }
-    });
-
-    return gaps;
   }
 }
 

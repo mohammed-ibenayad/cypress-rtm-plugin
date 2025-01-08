@@ -74,7 +74,7 @@ describe('CypressRTM Core', () => {
     expect(rtm.validateTestCase(invalidTestCase)).toBe(false);
   });
 
-  test('should add test case and update coverage', () => {
+  test('should add test case', () => {
     const testCase = {
       id: 'TC-001',
       title: 'Test Case',
@@ -87,12 +87,6 @@ describe('CypressRTM Core', () => {
     
     // Verify test case was added
     expect(rtm.testCases.has('TC-001')).toBe(true);
-    
-    // Verify coverage was updated
-    expect(rtm.coverage.requirements.has('REQ-001')).toBe(true);
-    expect(rtm.coverage.requirements.get('REQ-001').has('TC-001')).toBe(true);
-    expect(rtm.coverage.types.tests.has(TEST_TYPES.E2E)).toBe(true);
-    expect(rtm.coverage.types.tests.get(TEST_TYPES.E2E).has('TC-001')).toBe(true);
   });
 
   test('should throw error for invalid test case', () => {

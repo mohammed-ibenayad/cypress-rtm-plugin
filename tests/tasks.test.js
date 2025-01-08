@@ -30,16 +30,6 @@ describe('RTMTasks', () => {
       }]
     ]);
 
-    // Initialize coverage tracking with Maps
-    rtm.coverage = {
-      requirements: new Map(),
-      stories: new Map(),
-      types: {
-        requirements: new Map(),
-        tests: new Map()
-      }
-    };
-
     rtm.generateReports = jest.fn().mockResolvedValue(null);
     
     // Create tasks instance
@@ -70,15 +60,11 @@ describe('RTMTasks', () => {
     expect(registeredTasks).toHaveProperty('rtm:validateStory');
     expect(registeredTasks).toHaveProperty('rtm:addTestCase');
     expect(registeredTasks).toHaveProperty('rtm:addSuite');
-    expect(registeredTasks).toHaveProperty('rtm:applySuiteToTests');
-    expect(registeredTasks).toHaveProperty('rtm:getCoverage');
   });
 
   test('should validate requirement correctly', () => {
     // Test valid requirement
     expect(tasks.validateRequirement('REQ-001')).toBe(true);
-    expect(rtm.coverage.requirements.has('REQ-001')).toBe(true);
-    expect(rtm.coverage.requirements.get('REQ-001')).toBeInstanceOf(Set);
     
     // Test invalid requirement
     expect(tasks.validateRequirement('REQ-002')).toBe(false);
@@ -87,14 +73,12 @@ describe('RTMTasks', () => {
   test('should validate user story correctly', () => {
     // Test valid story
     expect(tasks.validateStory('US-001')).toBe(true);
-    expect(rtm.coverage.stories.has('US-001')).toBe(true);
-    expect(rtm.coverage.stories.get('US-001')).toBeInstanceOf(Set);
     
     // Test invalid story
     expect(tasks.validateStory('US-002')).toBe(false);
   });
 
-  test('should add test case and update coverage', () => {
+  test('should add test case', () => {
     const testCase = {
       id: 'TC-001',
       title: 'Test Case',
@@ -108,14 +92,6 @@ describe('RTMTasks', () => {
     
     // Verify test case was added
     expect(rtm.testCases.has(testCase.id)).toBe(true);
-    
-    // Verify coverage was updated correctly
-    expect(rtm.coverage.requirements.has('REQ-001')).toBe(true);
-    expect(rtm.coverage.requirements.get('REQ-001').has('TC-001')).toBe(true);
-    expect(rtm.coverage.stories.has('US-001')).toBe(true);
-    expect(rtm.coverage.stories.get('US-001').has('TC-001')).toBe(true);
-    expect(rtm.coverage.types.tests.has(TEST_TYPES.E2E)).toBe(true);
-    expect(rtm.coverage.types.tests.get(TEST_TYPES.E2E).has('TC-001')).toBe(true);
   });
 
   test('should add suite metadata', () => {
@@ -135,61 +111,6 @@ describe('RTMTasks', () => {
     const savedSuite = rtm.suites.get(suite.id);
     expect(savedSuite).toMatchObject(suite);
     expect(savedSuite.timestamp).toBeDefined();
-  });
-
-  test('should apply suite metadata to tests', () => {
-    // Add suite
-    const suite = {
-      id: 'TS-001',
-      type: TEST_TYPES.E2E,
-      priority: TEST_PRIORITIES.P1,
-      requirements: ['REQ-001'],
-      userStories: ['US-001'],
-      tags: ['regression']
-    };
-    rtm.suites.set(suite.id, suite);
-
-    // Add test case
-    const testCase = {
-      id: 'TC-001',
-      title: 'Test Case',
-      type: TEST_TYPES.E2E,
-      priority: TEST_PRIORITIES.P1,
-      suiteId: 'TS-001',
-      requirements: ['REQ-002'],
-      userStories: ['US-002'],
-      tags: ['smoke']
-    };
-    rtm.testCases.set(testCase.id, testCase);
-
-    tasks.applySuiteToTests(suite.id);
-
-    // Verify test case was updated with combined metadata
-    const updatedTest = rtm.testCases.get(testCase.id);
-    expect(updatedTest.requirements).toEqual(['REQ-002', 'REQ-001']);
-    expect(updatedTest.userStories).toEqual(['US-002', 'US-001']);
-    expect(updatedTest.tags).toEqual(['smoke', 'regression']);
-  });
-
-  test('should get coverage statistics', () => {
-    // Setup coverage data
-    rtm.coverage.requirements.set('REQ-001', new Set(['TC-001']));
-    rtm.coverage.stories.set('US-001', new Set(['TC-001']));
-
-    const coverage = tasks.getCoverage();
-    
-    expect(coverage).toEqual({
-      requirements: {
-        total: 1,
-        covered: 1,
-        percentage: 100
-      },
-      stories: {
-        total: 1,
-        covered: 1,
-        percentage: 100
-      }
-    });
   });
 
   test('should handle errors in test case validation', () => {

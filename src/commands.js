@@ -96,7 +96,7 @@ function addCommands(rtm) {
   // Add command for test suites
   Cypress.Commands.add('suite', (metadata = {}) => {
     const suiteId = Cypress.currentTest.suite.title;
-    
+
     // Store suite metadata
     cy.task('rtm:addSuite', {
       id: `TS-${suiteId}`,
@@ -108,9 +108,6 @@ function addCommands(rtm) {
       tags: metadata.tags || [],
       description: metadata.description
     });
-
-    // Apply suite metadata to all tests in the suite
-    cy.task('rtm:applySuiteToTests', suiteId);
   });
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@asaltech/cypress-rtm-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Requirements Traceability Matrix Plugin for Cypress",
   "main": "index.js",
   "types": "index.d.ts",

@@ -25,8 +25,7 @@ describe('RTM Commands', () => {
       validateRequirement: jest.fn(),
       validateStory: jest.fn(),
       addTestCase: jest.fn(),
-      addSuite: jest.fn(),
-      applySuiteToTests: jest.fn()
+      addSuite: jest.fn()
     };
 
     // Mock Cypress tasks

@@ -1,4 +1,8 @@
-declare module 'cypress-rtm-plugin' {
+// Import something to make this file an external module
+import 'cypress';
+
+// Declare the module for the plugin
+declare module '@asaltech/cypress-rtm-plugin' {
   export interface RTMConfig {
     userStoriesPath?: string;
     requirementsPath?: string;
@@ -18,7 +22,7 @@ declare module 'cypress-rtm-plugin' {
     dependencies?: string[];
     description?: string;
     timestamp?: string;
-    status?: 'passed' | 'failed' | 'skipped'; // Added status for execution tracking
+    status?: 'passed' | 'failed' | 'skipped';
   }
 
   export class CypressRTM {
@@ -35,6 +39,7 @@ declare module 'cypress-rtm-plugin' {
   export function addCommands(rtm: CypressRTM): void;
 }
 
+// Augment the global Cypress namespace
 declare global {
   namespace Cypress {
     interface Chainable {
